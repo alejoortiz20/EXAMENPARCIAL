@@ -45,17 +45,37 @@ distinto. Los **commits de resolución se conservaron** (sin *force push* ni *sq
 
 ```
 $ git log --graph --oneline --all
+*   1f880e4 README: evidencia de las pruebas en el servicio de Render (#8)
+|\
+| * 0f40c53 README: evidencia de las pruebas en el servicio de Render y correccion del payload
+|/
+*   77d87ff PieHost: el payload del evento conserva Id y Estado en mayuscula (#7)
+|\
+| * 6b967c2 PieHost: publica el payload con Id y Estado en mayuscula como pide el enunciado
+|/
+*   8c9c3bf Merge pull request #6 from alejoortiz20/feature/readme-evidencia
+|\
+| * 28953fd README con el grafo de ramas, los commits de conflicto y la evidencia de pruebas
+|/
+*   ca9e802 Merge pull request #5 from alejoortiz20/feature/render-docker
+|\
+| * c88df86 Despliegue en Render: Dockerfile multietapa para el web service
+|/
+*   2c383da Merge pull request #4 from alejoortiz20/feature/render-deploy
+|\
+| * 65f7995 Despliegue en Render: escucha el puerto que inyecta la plataforma
+|/
 *   8f545aa Merge pull request #3 from alejoortiz20/feature/websocket-piehost
 |\
-| *   d249d63 Resuelve el conflicto con main conservando busqueda (Algolia), cache (Redis) y tiempo real (PieHost)
+| *   d249d63 Resuelve el conflicto con main conservando busqueda (Algolia), cache (Redis) y tiempo real (PieHost)   <-- 2.o conflicto
 | |\
 | |/
 |/|
 * |   34637fa Merge pull request #2 from alejoortiz20/feature/cache-redis
 |\
-| * \   5cb73fc Resuelve el conflicto con main conservando busqueda (Algolia) y cache (Redis)
+| * \   5cb73fc Resuelve el conflicto con main conservando busqueda (Algolia) y cache (Redis)                      <-- 1.er conflicto
 | |\
-| |/ /
+| |/
 |/ | /
 * | |   d285584 Merge pull request #1 from alejoortiz20/feature/busqueda-algolia
 |\ \ \
@@ -65,7 +85,7 @@ $ git log --graph --oneline --all
 |/ /
 | * b534200 Tiempo real con PieHost: publica IncidenciaActualizada desde el servidor y actualiza la lista sin recargar
 |/
-* 63ffe80 Base: proyecto MVC con Identity, EF Core/SQLite y /Operaciones/Incidencias   <-- ancestro comun
+* 63ffe80 Base: proyecto MVC con Identity, EF Core/SQLite y /Operaciones/Incidencias   <-- ancestro comun de A, B y C
 * 2f01bfb Scaffold: project structure, env template and integration notes
 ```
 
@@ -214,6 +234,14 @@ Evento en el canal     {"event":"IncidenciaActualizada",
 El evento se comprobó con un cliente WebSocket independiente suscrito a
 `incidencias-operaciones`: el mensaje lo emitió el servidor del contenedor, no la
 máquina local.
+
+**Dos sesiones de navegador reales contra Render**, sin recargar la sesión que observa:
+```
+sesion 1 (pantalla abierta)   chip "conectado", ids [1,5,3,6,2,4], pastilla "redis"
+sesion 2 pulsa "Cerrar" en la tarjeta #005
+sesion 1 sin recargar         ids [1,3,6,2,4]
+                              aviso "Incidencia #005 cerrada en otra sesion"
+```
 
 ---
 
