@@ -1,0 +1,48 @@
+# --- Secretos: nunca commitear ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*APIKEYS*
+*CUENTAS*
+*secret*
+*credential*
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+.nuxt/
+dist/
+build/
+coverage/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.Python
+pip-wheel-metadata/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- IDE / SO ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Varios ---
+*.log
+*.tmp
+.cache/
+coverage/
