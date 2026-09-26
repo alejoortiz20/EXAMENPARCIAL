@@ -78,7 +78,17 @@ app.MapControllerRoute(
 
 await SeedAsync(app);
 
-app.Run();
+// En Render el puerto lo inyecta la plataforma en la variable PORT.
+var puerto = Environment.GetEnvironmentVariable("PORT");
+
+if (!string.IsNullOrWhiteSpace(puerto))
+{
+    app.Run($"http://0.0.0.0:{puerto}");
+}
+else
+{
+    app.Run();
+}
 
 static async Task SeedAsync(WebApplication app)
 {
