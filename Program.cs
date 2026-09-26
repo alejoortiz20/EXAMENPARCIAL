@@ -1,6 +1,9 @@
 using EXAMENPARCIAL.Models;
+using EXAMENPARCIAL.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
+CargarVariablesDelArchivo();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +33,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/Login";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 });
+
+builder.Services.AddSingleton(new AlgoliaOptions
+{
+    ApplicationId = builder.Configuration["ALGOLIA_APP_ID"] ?? string.Empty,
+    SearchApiKey = builder.Configuration["ALGOLIA_SEARCH_API_KEY"] ?? string.Empty,
+    Index = builder.Configuration["ALGOLIA_INDEX"] ?? "incidencias"
+});
+
+builder.Services.AddHttpClient<AlgoliaService>();
 
 var app = builder.Build();
 
@@ -83,5 +95,53 @@ static async Task SeedAsync(WebApplication app)
             new Incidencia { Estacion = "Estacion Plaza Norte", Descripcion = "Timbre de la stationCard no suena", Prioridad = 2, Estado = "Abierta" });
 
         await db.SaveChangesAsync();
+    }
+}
+
+static void CargarVariablesDelArchivo()
+{
+    string[] candidatos =
+    [
+        Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+        Path.Combine(AppContext.BaseDirectory, ".env")
+    ];
+
+    var ruta = candidatos.FirstOrDefault(File.Exists);
+
+    if (ruta is null)
+    {
+        return;
+    }
+
+    foreach (var linea in File.ReadAllLines(ruta))
+    {
+        var limpia = linea.Trim();
+
+        if (limpia.Length == 0 || limpia.StartsWith('#'))
+        {
+            continue;
+        }
+
+        var separador = limpia.IndexOf('=');
+
+        if (separador <= 0)
+        {
+            continue;
+        }
+
+        var clave = limpia[..separador].Trim();
+        var valor = limpia[(separador + 1)..].Trim().Trim('"');
+
+        if (string.IsNullOrEmpty(clave) || string.IsNullOrEmpty(valor))
+        {
+            continue;
+        }
+
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(clave)))
+        {
+            continue;
+        }
+
+        Environment.SetEnvironmentVariable(clave, valor);
     }
 }
