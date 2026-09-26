@@ -12,17 +12,20 @@ public class OperacionesController : Controller
     private readonly ApplicationDbContext _db;
     private readonly AlgoliaService _algolia;
     private readonly CacheRedisService _cache;
+    private readonly PieHostPublicador _piehost;
     private readonly ILogger<OperacionesController> _logger;
 
     public OperacionesController(
         ApplicationDbContext db,
         AlgoliaService algolia,
         CacheRedisService cache,
+        PieHostPublicador piehost,
         ILogger<OperacionesController> logger)
     {
         _db = db;
         _algolia = algolia;
         _cache = cache;
+        _piehost = piehost;
         _logger = logger;
     }
 
@@ -34,12 +37,7 @@ public class OperacionesController : Controller
         // Sin texto de busqueda: el listado general sale de la cache de Redis.
         if (string.IsNullOrEmpty(termino))
         {
-            var resultado = await _cache.ObtenerListadoAbiertoAsync(async () =>
-                await _db.Incidencias
-                    .Where(i => i.Estado == "Abierta")
-                    .OrderByDescending(i => i.Prioridad)
-                    .ThenBy(i => i.Id)
-                    .ToListAsync());
+            var resultado = await _cache.ObtenerListadoAbiertoAsync(ConsultarAbiertas);
 
             ViewData["OrigenListado"] = resultado.Origen;
             ViewData["Busqueda"] = string.Empty;
@@ -65,6 +63,9 @@ public class OperacionesController : Controller
         return View(ordenadas);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Panel() => PartialView("_Panel", await ConsultarAbiertas());
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cerrar(int id)
@@ -73,13 +74,27 @@ public class OperacionesController : Controller
 
         if (incidencia is not null && incidencia.Estado == "Abierta")
         {
+            // 1) persistir primero
             incidencia.Estado = "Cerrada";
             await _db.SaveChangesAsync();
             _logger.LogInformation("Incidencia {Id} cerrada", id);
 
+            // 2) invalidar la cache del listado antes de volver a consultarlo
             await _cache.InvalidarListadoAsync();
+
+            // 3) recien entonces publicar desde el servidor
+            await _piehost.PublicarAsync(
+                "IncidenciaActualizada",
+                new { Id = incidencia.Id, Estado = incidencia.Estado });
         }
 
         return RedirectToAction(nameof(Incidencias), new { q = Request.Query["q"] });
     }
+
+    private async Task<List<Incidencia>> ConsultarAbiertas() =>
+        await _db.Incidencias
+            .Where(i => i.Estado == "Abierta")
+            .OrderByDescending(i => i.Prioridad)
+            .ThenBy(i => i.Id)
+            .ToListAsync();
 }

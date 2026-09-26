@@ -1,23 +1,37 @@
 @model List<EXAMENPARCIAL.Models.Incidencia>
 @{
-    ViewData["Title"] = "Buscar incidencias";
+    ViewData["Title"] = "Incidencias";
+
     var criticas = Model.Count(i => i.Prioridad == 3);
     var altas = Model.Count(i => i.Prioridad == 2);
     var termino = ViewData["Busqueda"] as string ?? string.Empty;
     var buscando = termino.Length > 0;
+
     var origen = (string?)ViewData["OrigenListado"] ?? "Base de datos";
     var origenClase = origen == "Redis" ? "origen--redis" : "origen--base";
+
+    var cluster = Environment.GetEnvironmentVariable("PIESOCKET_CLUSTER_ID");
+    var canal = Environment.GetEnvironmentVariable("PIESOCKET_CHANNEL");
+    var clave = Environment.GetEnvironmentVariable("PIESOCKET_API_KEY");
+    var sesion = Guid.NewGuid().ToString("N");
+
+    cluster = string.IsNullOrWhiteSpace(cluster) ? "free.blr2" : cluster;
+    canal = string.IsNullOrWhiteSpace(canal) ? "incidencias-operaciones" : canal;
+    clave = clave ?? string.Empty;
+
+    var ws = string.Format(
+        "wss://{0}.piesocket.com/v4/{1}?api_key={2}&notify_self=1&source=jssdk&v=4.2.3&presence=1&uuid={3}",
+        cluster,
+        Uri.EscapeDataString(canal),
+        Uri.EscapeDataString(clave),
+        sesion);
 }
 
-<h1>Incidencias abiertas encontradas con consulta rápida</h1>
-
-<p class="origen @origenClase" role="status">
-    Listado servido desde <strong>@origen</strong>
-</p>
+<h1>Incidencias abiertas encontradas con consulta rápida en tiempo real</h1>
 
 <p class="lede">
     Averias reportadas en estaciones de bicicletas compartidas. Cerrar una incidencia
-    la retira del listado activo.
+    la retira del listado activo y se propaga al instante al resto de las sesiones.
 </p>
 
 <form class="buscador" method="get" action="/Operaciones/Incidencias" role="search">
@@ -42,60 +56,23 @@
     }
 </form>
 
-<section class="stats" aria-label="Resumen del estado">
-    <div class="stat">
-        <span class="stat__label">Abiertas</span>
-        <span class="stat__value">@Model.Count</span>
-    </div>
-    <div class="stat stat--critica">
-        <span class="stat__label">Criticas</span>
-        <span class="stat__value">@criticas</span>
-    </div>
-    <div class="stat stat--alta">
-        <span class="stat__label">Prioridad alta</span>
-        <span class="stat__value">@altas</span>
-    </div>
-</section>
+<p class="origen @origenClase" role="status">
+    Listado servido desde <strong>@origen</strong>
+</p>
 
-@if (buscando && Model.Count == 0)
-{
-    <div class="empty">
-        <p class="empty__title">Sin coincidencias</p>
-        <p class="empty__body">
-            Ninguna incidencia abierta coincide con &laquo;@termino&raquo;.
-            Prueba con el nombre de la estacion o parte de la descripcion.
-        </p>
-    </div>
-}
-else if (Model.Count == 0)
-{
-    <div class="empty">
-        <p class="empty__title">Sin incidencias abiertas</p>
-        <p class="empty__body">Todas las averias reportadas fueron cerradas. No hay nada pendiente de atencion.</p>
-    </div>
-}
-else
-{
-    <ul class="incidencias" role="list">
-        @foreach (var i in Model)
-        {
-            <li class="incidencia incidencia--p@(i.Prioridad)">
-                <div class="incidencia__id" aria-hidden="true">#@i.Id.ToString("D3")</div>
-                <div class="incidencia__body">
-                    <h2 class="incidencia__estacion">@i.Estacion</h2>
-                    <p class="incidencia__descripcion">@i.Descripcion</p>
-                </div>
-                <div class="incidencia__meta">
-                    <span class="pill pill--p@(i.Prioridad)">
-                        @(i.Prioridad switch { 3 => "Critica", 2 => "Alta", _ => "Baja" })
-                    </span>
-                    <span class="estado">@i.Estado</span>
-                </div>
-                <form asp-controller="Operaciones" asp-action="Cerrar" method="post" class="incidencia__accion">
-                    <input type="hidden" name="id" value="@i.Id" />
-                    <button type="submit" class="btn btn--primary">Cerrar</button>
-                </form>
-            </li>
-        }
-    </ul>
+<p class="tr-estado" id="tr-estado" data-estado="conectando" role="status">
+    <span class="tr-estado__punto" aria-hidden="true"></span>
+    <span id="tr-texto">Conectando con PieHost&hellip;</span>
+</p>
+
+<div id="panel">
+    @await Html.PartialAsync("_Panel", Model)
+</div>
+
+<div class="toast" id="tr-toast" role="status" aria-live="polite" hidden></div>
+
+<div id="tr-config" data-ws="@ws" data-panel="@Url.Action("Panel", "Operaciones")" hidden></div>
+
+@section Scripts {
+    <script src="~/js/tiemporeal.js" asp-append-version="true"></script>
 }

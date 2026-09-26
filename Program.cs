@@ -34,6 +34,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 });
 
+// Busqueda con Algolia
 builder.Services.AddSingleton(new AlgoliaOptions
 {
     ApplicationId = builder.Configuration["ALGOLIA_APP_ID"] ?? string.Empty,
@@ -43,8 +44,20 @@ builder.Services.AddSingleton(new AlgoliaOptions
 
 builder.Services.AddHttpClient<AlgoliaService>();
 
+// Cache con Redis
 builder.Services.AddSingleton<RedisConexion>();
 builder.Services.AddSingleton<CacheRedisService>();
+
+// Tiempo real con PieHost
+builder.Services.AddSingleton(new PieHostOptions
+{
+    ApiKey = builder.Configuration["PIESOCKET_API_KEY"] ?? string.Empty,
+    ApiSecret = builder.Configuration["PIESOCKET_API_SECRET"] ?? string.Empty,
+    ChannelId = builder.Configuration["PIESOCKET_CHANNEL"] ?? string.Empty,
+    ClusterId = builder.Configuration["PIESOCKET_CLUSTER_ID"] ?? "free.blr2"
+});
+
+builder.Services.AddSingleton<PieHostPublicador>();
 
 var app = builder.Build();
 
