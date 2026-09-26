@@ -2,6 +2,14 @@
 @{
     ViewData["Title"] = "Incidencias";
 
+    var criticas = Model.Count(i => i.Prioridad == 3);
+    var altas = Model.Count(i => i.Prioridad == 2);
+    var termino = ViewData["Busqueda"] as string ?? string.Empty;
+    var buscando = termino.Length > 0;
+
+    var origen = (string?)ViewData["OrigenListado"] ?? "Base de datos";
+    var origenClase = origen == "Redis" ? "origen--redis" : "origen--base";
+
     var cluster = Environment.GetEnvironmentVariable("PIESOCKET_CLUSTER_ID");
     var canal = Environment.GetEnvironmentVariable("PIESOCKET_CHANNEL");
     var clave = Environment.GetEnvironmentVariable("PIESOCKET_API_KEY");
@@ -19,11 +27,37 @@
         sesion);
 }
 
-<h1>Incidencias abiertas en tiempo real</h1>
+<h1>Incidencias abiertas encontradas con consulta rápida en tiempo real</h1>
 
 <p class="lede">
     Averias reportadas en estaciones de bicicletas compartidas. Cerrar una incidencia
     la retira del listado activo y se propaga al instante al resto de las sesiones.
+</p>
+
+<form class="buscador" method="get" action="/Operaciones/Incidencias" role="search">
+    <label class="buscador__label" for="q">Buscar incidencia</label>
+    <div class="buscador__caja">
+        <span class="buscador__icono" aria-hidden="true"></span>
+        <input id="q" name="q" type="search" value="@termino"
+               placeholder="Nombre de estacion o descripcion de la averia"
+               autocomplete="off" />
+        <button type="submit" class="btn btn--primary">Buscar</button>
+        @if (buscando)
+        {
+            <a class="btn btn--ghost" href="/Operaciones/Incidencias">Limpiar</a>
+        }
+    </div>
+    @if (buscando)
+    {
+        <p class="buscador__nota" role="status">
+            <strong>@Model.Count</strong>
+            @(Model.Count == 1 ? "resultado" : "resultados") para &laquo;@termino&raquo;
+        </p>
+    }
+</form>
+
+<p class="origen @origenClase" role="status">
+    Listado servido desde <strong>@origen</strong>
 </p>
 
 <p class="tr-estado" id="tr-estado" data-estado="conectando" role="status">
