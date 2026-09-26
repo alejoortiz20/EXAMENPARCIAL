@@ -416,3 +416,81 @@ h1 {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ---------- Buscador ---------- */
+
+.buscador { margin-top: 1.5rem; max-width: 46rem; }
+
+.buscador__label {
+    display: block;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.45rem;
+}
+
+.buscador__caja {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0.45rem 0.5rem 0.45rem 0.9rem;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.buscador__caja:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+
+.buscador__icono {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid var(--text-faint);
+    border-radius: 50%;
+    position: relative;
+    margin-right: 0.25rem;
+}
+.buscador__icono::after {
+    content: "";
+    position: absolute;
+    right: -5px;
+    bottom: -4px;
+    width: 7px;
+    height: 2px;
+    background: var(--text-faint);
+    transform: rotate(45deg);
+    border-radius: 2px;
+}
+
+.buscador__caja input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.45rem 0.15rem;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--step-0);
+}
+.buscador__caja input::placeholder { color: var(--text-faint); }
+.buscador__caja input:focus { outline: none; }
+
+.buscador__caja .btn--primary,
+.buscador__caja .btn--ghost { flex: none; }
+
+.buscador__nota {
+    margin-top: 0.6rem;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+}
+.buscador__nota strong { color: var(--accent); font-family: var(--mono); }
+
+@media (max-width: 720px) {
+    .buscador__caja { flex-wrap: wrap; padding: 0.55rem; }
+    .buscador__icono { display: none; }
+    .buscador__caja input { flex: 1 1 100%; padding: 0.5rem 0.35rem; }
+    .buscador__caja .btn--primary { flex: 1 1 auto; }
+}
