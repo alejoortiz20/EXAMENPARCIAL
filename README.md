@@ -27,6 +27,9 @@ integrar cualquiera de ellas, y cada una se entrega mediante un pull request:
 | 3 — Actualización con PieHost | `feature/websocket-piehost` | [#3](https://github.com/alejoortiz20/EXAMENPARCIAL/pull/3) | `b534200` |
 | Despliegue en Render | `feature/render-deploy` | [#4](https://github.com/alejoortiz20/EXAMENPARCIAL/pull/4) | `65f7995` |
 | Dockerfile para Render | `feature/render-docker` | [#5](https://github.com/alejoortiz20/EXAMENPARCIAL/pull/5) | — |
+| README de entrega | `feature/readme-evidencia` | [#6](https://github.com/alejoortiz20/EXAMENPARCIAL/pull/6) | — |
+| Payload del evento en mayúscula | `fix/piehost-payload-pascalcase` | [#7](https://github.com/alejoortiz20/EXAMENPARCIAL/pull/7) | `6b967c2` |
+| Evidencia en producción | `docs/evidencia-produccion` | [#8](https://github.com/alejoortiz20/EXAMENPARCIAL/pull/8) | — |
 
 `main` nunca recibió trabajo directo: solo merges de pull requests.
 
@@ -115,6 +118,15 @@ Cuando el supervisor cierra una incidencia, el servidor **guarda primero el esta
 { "event": "IncidenciaActualizada", "data": { "Id": 1, "Estado": "Cerrada" } }
 ```
 
+> **Corrección documentada (PR #7).** En la primera verificación en producción el
+> evento llegaba como `{"id":1,"estado":"Cerrada"}`, en camelCase. La causa era que
+> `PieHostPublicador` serializaba el sobre **y el payload** con
+> `JsonSerializerDefaults.Web`, cuya política de nombres en camelCase también se aplicaba
+> al objeto `datos`. Ahora el sobre usa esa convención (`event` / `data`) y el payload se
+> serializa sin política de nombres, de modo que viaja exactamente como pide el
+> enunciado: `Id` y `Estado`. El JavaScript ya era tolerante con ambas formas
+> (`datos.Id ?? datos.id`), por lo que la actualización sin recargar nunca se rompió.
+
 La pantalla (`wwwroot/js/tiemporeal.js`) está conectada al canal y **actualiza la lista
 sin recargar la página**: retira la tarjeta afectada, recalcula los contadores y muestra
 un aviso. Al reconectar (y en la primera conexión) consulta el estado vigente en
@@ -177,6 +189,32 @@ sesion 1 sin recargar:  5 tarjetas, ids [5,3,6,2,4]
    (el filtro Estado == "Abierta" se aplica sobre los ids que devuelve Algolia)
 ```
 
+### Las mismas pruebas contra el servicio desplegado en Render
+
+Ejecutadas sobre `https://examen-parcial-gbhc.onrender.com`, no contra `localhost`:
+
+```
+Login                  POST /Account/Login -> 302 -> /Operaciones/Incidencias
+Listado                <h1>Incidencias abiertas encontradas con consulta rapida
+                              en tiempo real</h1>
+                       1.er GET -> pastilla "base"     (miss)
+                       2.do GET -> pastilla "redis"    (hit en Redis)
+Busqueda en Algolia    ?q=llanta -> 1 resultado  (id 2, Estacion Plaza Mayor)
+                       ?q=cadena -> 1 resultado  (id 4, Estacion San Martin)
+                       ?q=freno  -> 0 resultados (la #001 ya estaba cerrada)
+Cierre desde HTTP      ids [5,3,6,2,4] -> [5,3,6,2]  al cerrar la #006
+                       pastilla post-cierre -> "base"   (la clave se invalido)
+Siguiente GET          pastilla -> "redis"             (la cache se repuso)
+Algolia tras el cierre ?q=timbre -> 0 resultados        (ya no la muestra)
+Evento en el canal     {"event":"IncidenciaActualizada",
+                        "data":{"Id":6,"Estado":"Cerrada"},
+                        "system::channel":"incidencias-operaciones"}
+```
+
+El evento se comprobó con un cliente WebSocket independiente suscrito a
+`incidencias-operaciones`: el mensaje lo emitió el servidor del contenedor, no la
+máquina local.
+
 ---
 
 ## 4. Configuración por variables de entorno
@@ -220,12 +258,19 @@ La base SQLite se crea sola (`EnsureCreated`) con 6 incidencias de prueba y el u
   el servicio usa el `Dockerfile` multietapa de la raíz (SDK 10 para compilar, imagen
   `aspnet:10` para ejecutar). PR #5.
 - **Puerto:** Render inyecta `PORT`; `Program.cs` hace que Kestrel escuche en él. PR #4.
-- **Commit desplegado:** el `main` final (`2c383da` con el fix de puerto y `ca9e802` con
-  el `Dockerfile`), que es el mismo código de `main`.
+- **Commit desplegado:** el `main` final, que es el mismo código de `main`. La API de
+  Render reporta el despliegue `live` con el SHA de `main`:
+  `GET /v1/services/srv-darib27avr4c73eq42g0/deploys` →
+  `status: live`, `commit.message: "Merge pull request #6 ... feature/readme-evidencia"`.
+- **Identificador del servicio:** `srv-darib27avr4c73eq42g0`
+  (`https://dashboard.render.com/web/srv-darib27avr4c73eq42g0`).
+- **Autodespliegue:** activo (`autoDeploy: yes`, disparador `commit`), así que cada
+  fusión a `main` vuelve a desplegar.
 
-> El plan gratuito de Render apaga el servicio tras unos minutos de inactividad, así que
-> la primera carga puede tardar. La base SQLite vive en el sistema de archivos efímero del
-> contenedor: en cada despliegue se vuelve a crear con la semilla de 6 incidencias.
+> La base SQLite vive en el sistema de archivos efímero del contenedor: **cada
+> despliegue la vuelve a crear** con la semilla de 6 incidencias y el usuario
+> `supervisor` / `Supervisor2026`. Si durante una demostración se cierran incidencias,
+> un redespliegue devuelve el listado a las 6 originales.
 
 ---
 
