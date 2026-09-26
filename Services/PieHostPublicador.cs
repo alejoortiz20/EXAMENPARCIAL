@@ -30,7 +30,11 @@ public class PieHostOptions
 
 public sealed class PieHostPublicador : IAsyncDisposable
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    // El sobre del evento usa la convencion web (event/data en minusculas), pero los
+    // datos viajan tal cual los define el examen: Id y Estado con mayuscula inicial.
+    private static readonly JsonSerializerOptions JsonSobre = new(JsonSerializerDefaults.Web);
+
+    private static readonly JsonSerializerOptions JsonDatos = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
@@ -58,7 +62,8 @@ public sealed class PieHostPublicador : IAsyncDisposable
             return false;
         }
 
-        var mensaje = JsonSerializer.Serialize(new { @event = evento, data = datos }, Json);
+        var mensaje = "{\"event\":" + JsonSerializer.Serialize(evento, JsonSobre)
+                      + ",\"data\":" + JsonSerializer.Serialize(datos, JsonDatos) + "}";
 
         await _candado.WaitAsync();
 
