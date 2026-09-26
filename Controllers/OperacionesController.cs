@@ -11,15 +11,18 @@ public class OperacionesController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly AlgoliaService _algolia;
+    private readonly CacheRedisService _cache;
     private readonly ILogger<OperacionesController> _logger;
 
     public OperacionesController(
         ApplicationDbContext db,
         AlgoliaService algolia,
+        CacheRedisService cache,
         ILogger<OperacionesController> logger)
     {
         _db = db;
         _algolia = algolia;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -28,18 +31,23 @@ public class OperacionesController : Controller
     {
         var termino = q?.Trim();
 
+        // Sin texto de busqueda: el listado general sale de la cache de Redis.
         if (string.IsNullOrEmpty(termino))
         {
-            var abiertas = await _db.Incidencias
-                .Where(i => i.Estado == "Abierta")
-                .OrderByDescending(i => i.Prioridad)
-                .ThenBy(i => i.Id)
-                .ToListAsync();
+            var resultado = await _cache.ObtenerListadoAbiertoAsync(async () =>
+                await _db.Incidencias
+                    .Where(i => i.Estado == "Abierta")
+                    .OrderByDescending(i => i.Prioridad)
+                    .ThenBy(i => i.Id)
+                    .ToListAsync());
 
+            ViewData["OrigenListado"] = resultado.Origen;
             ViewData["Busqueda"] = string.Empty;
-            return View(abiertas);
+
+            return View(resultado.Items);
         }
 
+        // Con texto: se consulta Algolia directo, sin pasar por la cache.
         var ids = await _algolia.BuscarIdsAsync(termino);
 
         var encontradas = await _db.Incidencias
@@ -52,6 +60,7 @@ public class OperacionesController : Controller
             .ToList();
 
         ViewData["Busqueda"] = termino;
+        ViewData["OrigenListado"] = "Algolia";
 
         return View(ordenadas);
     }
@@ -67,6 +76,8 @@ public class OperacionesController : Controller
             incidencia.Estado = "Cerrada";
             await _db.SaveChangesAsync();
             _logger.LogInformation("Incidencia {Id} cerrada", id);
+
+            await _cache.InvalidarListadoAsync();
         }
 
         return RedirectToAction(nameof(Incidencias), new { q = Request.Query["q"] });

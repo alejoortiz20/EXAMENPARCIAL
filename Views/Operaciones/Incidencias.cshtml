@@ -5,9 +5,15 @@
     var altas = Model.Count(i => i.Prioridad == 2);
     var termino = ViewData["Busqueda"] as string ?? string.Empty;
     var buscando = termino.Length > 0;
+    var origen = (string?)ViewData["OrigenListado"] ?? "Base de datos";
+    var origenClase = origen == "Redis" ? "origen--redis" : "origen--base";
 }
 
-<h1>Incidencias abiertas encontradas</h1>
+<h1>Incidencias abiertas encontradas con consulta rápida</h1>
+
+<p class="origen @origenClase" role="status">
+    Listado servido desde <strong>@origen</strong>
+</p>
 
 <p class="lede">
     Averias reportadas en estaciones de bicicletas compartidas. Cerrar una incidencia

@@ -43,6 +43,9 @@ builder.Services.AddSingleton(new AlgoliaOptions
 
 builder.Services.AddHttpClient<AlgoliaService>();
 
+builder.Services.AddSingleton<RedisConexion>();
+builder.Services.AddSingleton<CacheRedisService>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
