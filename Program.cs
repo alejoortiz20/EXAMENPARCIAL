@@ -34,6 +34,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 });
 
+builder.Services.AddSingleton(new AlgoliaOptions
+{
+    ApplicationId = builder.Configuration["ALGOLIA_APP_ID"] ?? string.Empty,
+    SearchApiKey = builder.Configuration["ALGOLIA_SEARCH_API_KEY"] ?? string.Empty,
+    Index = builder.Configuration["ALGOLIA_INDEX"] ?? "incidencias"
+});
+
+builder.Services.AddHttpClient<AlgoliaService>();
+
 builder.Services.AddSingleton<RedisConexion>();
 builder.Services.AddSingleton<CacheRedisService>();
 
