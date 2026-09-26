@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] &middot; OperBici</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+    <header class="appbar">
+        <div class="appbar__inner">
+            <a class="brand" href="/Operaciones/Incidencias">
+                <span class="brand__mark" aria-hidden="true"></span>
+                <span class="brand__text">
+                    <strong>OperBici</strong>
+                    <small>Control de incidencias</small>
+                </span>
+            </a>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="appbar__account">
+                    <span class="account__user">
+                        <span class="account__avatar" aria-hidden="true">@User.Identity!.Name![..1].ToUpperInvariant()</span>
+                        @User.Identity!.Name
+                    </span>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="account__logout">
+                        <button type="submit" class="btn btn--ghost">Cerrar sesi&oacute;n</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </header>
+
+    <main id="contenido" class="shell">
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Ingresar";
+}
+
+<div class="login">
+    <div class="login__card">
+        <span class="brand__mark brand__mark--lg" aria-hidden="true"></span>
+        <h1 class="login__title">OperBici</h1>
+        <p class="login__subtitle">Ingresa con tu cuenta de supervisor para gestionar las incidencias.</p>
+
+        <form asp-controller="Account" asp-action="Login" method="post" class="login__form">
+            <div asp-validation-summary="ModelOnly" class="alert alert--error" role="alert"></div>
+
+            <div class="field">
+                <label for="usuario">Usuario</label>
+                <input id="usuario" name="usuario" type="text" autocomplete="username" required autofocus />
+            </div>
+
+            <div class="field">
+                <label for="clave">Clave</label>
+                <input id="clave" name="clave" type="password" autocomplete="current-password" required />
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--block">Ingresar</button>
+        </form>
+    </div>
+</div>

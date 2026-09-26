@@ -9,6 +9,18 @@
 *secret*
 *credential*
 
+# --- .NET / ASP.NET Core ---
+/bin/
+/obj/
+/.vs/
+*.user
+*.suo
+launchSettings.json
+
+# --- Base de datos local (se re-regenera con el seed) ---
+incidencias.db
+incidencias.db-*
+
 # --- Node ---
 node_modules/
 npm-debug.log*
@@ -16,8 +28,9 @@ yarn-error.log*
 pnpm-debug.log*
 .next/
 .nuxt/
-dist/
-build/
+/coverage/
+/dist/
+/build/
 coverage/
 
 # --- Python ---
